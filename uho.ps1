@@ -11,7 +11,8 @@ class Uho {
     $i = 4
     ls $dir_ | %{
       $fn_ = $_
-      $this.mnu.body += [MenuItem]::new(7, $i++, $_.Name, $this.sb.GetNewClosure())
+      $cap = ($_.Attributes.ToString()).SubString(0, 1) +" "+ $_.Name
+      $this.mnu.body += [MenuItem]::new(7, $i++, $cap, $this.sb.GetNewClosure())
     }
   }
 
