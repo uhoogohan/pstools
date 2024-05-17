@@ -1,101 +1,21 @@
-add-type -AssemblyName System.Windows.Forms
-$kmp = [Windows.Forms.Keys]
-$rui = $host.UI.RawUI
-. ".\def.ps1"
-
-# ãƒ¡ãƒ‹ãƒ¥ãƒ¼è¡¨ç¤º
-function show_menu($head, $body, $foot)
-{
-  $init = $true
-  $i = 0
-  do {
-    if($init) {
-      clear
-      foreach($s in $head) {mv_cur $s.x $s.y; write-host $s.caption}
-      foreach($s in $body) {mv_cur $s.x $s.y; write-host $s.caption}
-      foreach($s in $foot) {mv_cur $s.x $s.y; write-host $s.caption}
-      $init = $false;
-    }
-
-    $s = $body[$i]
-
-    mv_cur $s.x $s.y
-    write-host $s.caption -F "Black" -B "White"
-    mv_cur $s.x $s.y
-
-    $kif = $rui.ReadKey("NoEcho,IncludeKeyDown")
-    $kcd = $kif.VirtualKeyCode
-
-    if($kcd -in ($kmp::Up, $kmp::Left)) {
-      write-host $s.caption; $i-=1 
-      if($i -lt 0) { $i = $body.length - 1 }
-    }
-
-    if($kcd -in ($kmp::Down, $kmp::Right)) {
-      write-host $s.caption; $i+=1
-      if($i -ge $body.length) { $i = 0; }
-    }
-
-    if($kcd -eq $kmp::Enter) {
-      $s.exe()
-      $init = $true;
-    }
-  }
-  until($kcd -in ($kmp::Escape, $kmp::Q))
-  clear
-}
-
-# ã‚«ãƒ¼ã‚½ãƒ«ç§»å‹•
-function mv_cur($x, $y) {
-  $cd = New-Object System.Management.Automation.Host.Coordinates $x, $y
-  $rui.CursorPosition = $cd
-}
-
-class Caption {
-  $x; $y; $caption
-
-  Caption($x, $y, $caption) {
-    $this.x = $x; $this.y = $y; $this.caption = $caption
-  }
-}
-
-class Menu : Caption {
-  $head = @(); $body = @(); $foot = @()
-
-  Menu($x, $y, $caption) : base ($x, $y, $caption) {
-    $title = "** "+ $caption + " **"
-    $this.head += new-object Caption(7, 2, $title)
-  }
-
-  exe() {
-    show_menu $this.head $this.body $this.foot
-  }
-}
-
-class MenuItem : Caption {
-  $cmd
-
-  MenuItem($x, $y, $caption, $cmd) : base($x, $y, $caption) {
-    $this.cmd = $cmd
-  }
-
-  exe() {
-    &($this.cmd)
-  }
-}
+<#------------------------------------------------------------------
+ Windows Server ‚ğƒLƒbƒeƒBƒ“ƒO‚µ‚Ü‚·
+------------------------------------------------------------------#>
+using module ".\menu.psm1"
+. (join-path $PSScriptRoot "def.ps1")
 
 class Host : Menu {
-  Host($x, $y, $param) : base($x, $y, "ãƒ›ã‚¹ãƒˆåã®è¨­å®š") {
+  Host($x, $y, $param) : base($x, $y, "ƒzƒXƒg–¼‚Ìİ’è") {
     $s = gwmi win32_computersystem
-    $this.body += new-object MenuItem(7, 5, "è¨­å®šç¢ºèª", {sysdm.cpl})
-    $this.body += new-object MenuItem(7, 7, "è¨­å®šå®Ÿè¡Œ", $this.config)
-    $this.foot += new-object Caption(7, 11, "* ç¾åœ¨ã®è¨­å®š")
-    $this.foot += new-object Caption(7, 13, ("ãƒ›ã‚¹ãƒˆå       : "+$s.name))
-    $this.foot += new-object Caption(7, 14, ("ãƒ¯ãƒ¼ã‚¯ã‚°ãƒ«ãƒ¼ãƒ— : "+$s.domain))
-    $this.foot += new-object Caption(7, 17, "* å¤‰æ›´å¾Œã®è¨­å®š")
-    $this.foot += new-object Caption(7, 19, ("ãƒ›ã‚¹ãƒˆå       : "+$param.host_name))
-    $this.foot += new-object Caption(7, 20, ("ãƒ¯ãƒ¼ã‚¯ã‚°ãƒ«ãƒ¼ãƒ— : "+$param.domain))
-    $this.foot += new-object Caption(7, 23, "* å®Ÿè¡Œå¾Œã€å†èµ·å‹•ã—ã¾ã™")
+    $this.body += [MenuItem]::new(7, 5, "İ’èŠm”F", {sysdm.cpl})
+    $this.body += [MenuItem]::new(7, 7, "İ’èÀs", $this.config)
+    $this.foot += [Caption]::new(7, 11, "* Œ»İ‚Ìİ’è")
+    $this.foot += [Caption]::new(7, 13, ("ƒzƒXƒg–¼       : "+$s.name))
+    $this.foot += [Caption]::new(7, 14, ("ƒ[ƒNƒOƒ‹[ƒv : "+$s.domain))
+    $this.foot += [Caption]::new(7, 17, "* •ÏXŒã‚Ìİ’è")
+    $this.foot += [Caption]::new(7, 19, ("ƒzƒXƒg–¼       : "+$param.host_name))
+    $this.foot += [Caption]::new(7, 20, ("ƒ[ƒNƒOƒ‹[ƒv : "+$param.domain))
+    $this.foot += [Caption]::new(7, 23, "* ÀsŒãAÄ‹N“®‚µ‚Ü‚·")
   }
 
   $config = {
@@ -117,22 +37,22 @@ class Host : Menu {
 }
 
 class Network : Menu {
-  Network($x, $y, $nw) : base($x, $y, "ãƒãƒƒãƒˆãƒ¯ãƒ¼ã‚¯è¨­å®š") {
-    $this.body += new-object RenameIfs(7, 5, $nw)
-    $this.body += new-object Lbfo(7, 7, $nw)
-    $this.body += new-object Binding(7, 9, $nw)
-    $this.body += new-object IPAddr(7, 11, $nw)
-    $this.body += new-object MenuItem(7, 13, "ncpa.cpl", {ncpa.cpl})
+  Network($x, $y, $nw) : base($x, $y, "ƒlƒbƒgƒ[ƒNİ’è") {
+    $this.body += [RenameIfs]::new(7, 5, $nw)
+    $this.body += [Lbfo]::new(7, 7, $nw)
+    $this.body += [Binding]::new(7, 9, $nw)
+    $this.body += [IPAddr]::new(7, 11, $nw)
+    $this.body += [MenuItem]::new(7, 13, "ncpa.cpl", {ncpa.cpl})
   }
 }
 
 class RenameIfs : Menu {
-  RenameIfs($x, $y, $nw) : base ($x, $y, "NICã®ãƒãƒ¼ãƒˆåã®å¤‰æ›´") {
-    $this.body += new-object MenuItem(7, 5, "è¨­å®šå®Ÿè¡Œ", $this.config)
-    $this.foot += new-object Caption(7, 8, "* æ¬¡ã®åå‰ã«å¤‰æ›´ã—ã¾ã™*")
+  RenameIfs($x, $y, $nw) : base ($x, $y, "NIC‚Ìƒ|[ƒg–¼‚Ì•ÏX") {
+    $this.body += [MenuItem]::new(7, 5, "İ’èÀs", $this.config)
+    $this.foot += [Caption]::new(7, 8, "* Ÿ‚Ì–¼‘O‚É•ÏX‚µ‚Ü‚·*")
     $i = 10
     foreach($r in $nw.rename_ifs) {
-      $this.foot += new-object Caption(7, $i, ($r.name +" => "+ $r.newname)); $i+=1
+      $this.foot += [Caption]::new(7, $i, ($r.name +" => "+ $r.newname)); $i+=1
     }
   }
 
@@ -146,15 +66,15 @@ class RenameIfs : Menu {
 }
 
 class Lbfo : Menu {
-  Lbfo($x, $y, $nw) : base($x, $y, "ãƒãƒ¼ãƒŸãƒ³ã‚°") {
-    $this.body += new-object MenuItem(7, 5, "è¨­å®šç¢ºèª", $this.confirm)
-    $this.body += new-object MenuItem(7, 7, "è¨­å®šå®Ÿè¡Œ", $this.config)
-    $this.foot += new-object Caption(7, 10, "* æ¬¡ã®å€¤ã‚’è¿½åŠ ã—ã¾ã™")
-    $this.foot += new-object Caption(9, 12, ("ãƒãƒ¼ãƒ å         : " + $nw.lbfo1.Name))
-    $this.foot += new-object Caption(9, 13, ("ãƒ¡ãƒ³ãƒãƒ¼         : " + $nw.lbfo1.TeamMembers))
-    $this.foot += new-object Caption(9, 14, ("ãƒãƒ¼ãƒŸãƒ³ã‚°ãƒ¢ãƒ¼ãƒ‰ : " + $nw.lbfo1.TeamingMode))
-    $this.foot += new-object Caption(9, 15, ("ä¸å¯åˆ†æ•£ãƒ¢ãƒ¼ãƒ‰   : " + $nw.lbfo1.LoadBalancingAlgorithm))
-    $this.foot += new-object Caption(9, 16, ("ã‚¹ã‚¿ãƒ³ãƒã‚¤ãƒãƒ¼ãƒˆ : " + $nw.lbfo2.Name))
+  Lbfo($x, $y, $nw) : base($x, $y, "ƒ`[ƒ~ƒ“ƒO") {
+    $this.body += [MenuItem]::new(7, 5, "İ’èŠm”F", $this.confirm)
+    $this.body += [MenuItem]::new(7, 7, "İ’èÀs", $this.config)
+    $this.foot += [Caption]::new(7, 10, "* Ÿ‚Ì’l‚ğ’Ç‰Á‚µ‚Ü‚·")
+    $this.foot += [Caption]::new(9, 12, ("ƒ`[ƒ€–¼         : " + $nw.lbfo1.Name))
+    $this.foot += [Caption]::new(9, 13, ("ƒƒ“ƒo[         : " + $nw.lbfo1.TeamMembers))
+    $this.foot += [Caption]::new(9, 14, ("ƒ`[ƒ~ƒ“ƒOƒ‚[ƒh : " + $nw.lbfo1.TeamingMode))
+    $this.foot += [Caption]::new(9, 15, ("•s‰Â•ªUƒ‚[ƒh   : " + $nw.lbfo1.LoadBalancingAlgorithm))
+    $this.foot += [Caption]::new(9, 16, ("ƒXƒ^ƒ“ƒoƒCƒ|[ƒg : " + $nw.lbfo2.Name))
   }
 
   $config = {
@@ -172,14 +92,14 @@ class Lbfo : Menu {
 }
 
 class Binding : Menu {
-  Binding($x, $y, $nw) : base($x, $y, "ãƒã‚¤ãƒ³ãƒ‡ã‚£ãƒ³ã‚°") {
-    $this.body += new-object MenuItem(7, 5, "è¨­å®šå®Ÿè¡Œ", $this.config)
-    $this.foot += new-object Caption(7, 8, "* æ¬¡ã®å€¤ã«è¨­å®šã—ã¾ã™")
+  Binding($x, $y, $nw) : base($x, $y, "ƒoƒCƒ“ƒfƒBƒ“ƒO") {
+    $this.body += [MenuItem]::new(7, 5, "İ’èÀs", $this.config)
+    $this.foot += [Caption]::new(7, 8, "* Ÿ‚Ì’l‚Éİ’è‚µ‚Ü‚·")
     $i=10
     foreach($r in $nw.ifs) {
-      $this.foot += new-object Caption(9, $i, ("æ¥ç¶šå : "+ $r.name)); $i+=2
+      $this.foot += [Caption]::new(9, $i, ("Ú‘±–¼ : "+ $r.name)); $i+=2
       foreach($x in $r.bindings) {
-        $this.foot += new-object Caption(9, $i, ($nw.binding_dscr[$x.ComponentID]+" : "+$x.Enabled)); $i+=1
+        $this.foot += [Caption]::new(9, $i, ($nw.binding_dscr[$x.ComponentID]+" : "+$x.Enabled)); $i+=1
       }$i+=2
     }
   }
@@ -196,24 +116,24 @@ class Binding : Menu {
 }
 
 class IPAddr : Menu {
-  IPAddr($x, $y, $nw) : base($x, $y, "IPã‚¢ãƒ‰ãƒ¬ã‚¹") {
-    $this.body += new-object MenuItem(7, 5, "è¨­å®šå®Ÿè¡Œ", $this.config)
-    $this.foot += new-object Caption(7, 8, "* æ¬¡ã®å€¤ã‚’è¿½åŠ ã—ã¾ã™")
+  IPAddr($x, $y, $nw) : base($x, $y, "IPƒAƒhƒŒƒX") {
+    $this.body += [MenuItem]::new(7, 5, "İ’èÀs", $this.config)
+    $this.foot += [Caption]::new(7, 8, "* Ÿ‚Ì’l‚ğ’Ç‰Á‚µ‚Ü‚·")
     $i=10
     foreach($r in $nw.ifs) {
       if($r.ip -ne $null) {
-        $this.foot += new-object Caption(9, $i, ("æ¥ç¶šå     : "+ $r.name)); $i+=1
-        $this.foot += new-object Caption(9, $i, ("IPã‚¢ãƒ‰ãƒ¬ã‚¹ : "+ $r.ip.IPAddress + "/"+ $r.ip.PrefixLength)); $i+=1
-        $this.foot += new-object Caption(9, $i, ("ãƒ‡ãƒ•ã‚©ã‚²   : "+ $r.ip.DefaultGateway)); $i+=1
-        $this.foot += new-object Caption(9, $i, ("DNSã‚µãƒ¼ãƒ  : "+ $r.dns.ServerAddress)); $i+=1
+        $this.foot += [Caption]::new(9, $i, ("Ú‘±–¼     : "+ $r.name)); $i+=1
+        $this.foot += [Caption]::new(9, $i, ("IPƒAƒhƒŒƒX : "+ $r.ip.IPAddress + "/"+ $r.ip.PrefixLength)); $i+=1
+        $this.foot += [Caption]::new(9, $i, ("ƒfƒtƒHƒQ   : "+ $r.ip.DefaultGateway)); $i+=1
+        $this.foot += [Caption]::new(9, $i, ("DNSƒT[ƒo  : "+ $r.dns.ServerAddress)); $i+=1
       }
       if($r.register -eq $false) {
-        $this.foot += new-object Caption(9, $i, "* ã“ã®æ¥ç¶šã®ã‚¢ãƒ‰ãƒ¬ã‚¹ã‚’DNSã«ç™»éŒ²ã™ã‚‹ ã®ãƒã‚§ãƒƒã‚¯ã‚’å¤–ã—ã¾ã™"); $i+=1
+        $this.foot += [Caption]::new(9, $i, "* ‚±‚ÌÚ‘±‚ÌƒAƒhƒŒƒX‚ğDNS‚É“o˜^‚·‚é ‚Ìƒ`ƒFƒbƒN‚ğŠO‚µ‚Ü‚·"); $i+=1
       }
     }
     if($nw.enablewins -eq $false) {
        $i+=3
-       $this.foot += new-object Caption(9, $i, "* LMHOSTSã®å‚ç…§ã‚’æœ‰åŠ¹ã«ã™ã‚‹ ã®ãƒã‚§ãƒƒã‚¯ã‚’å¤–ã—ã¾ã™")
+       $this.foot += [Caption]::new(9, $i, "* LMHOSTS‚ÌQÆ‚ğ—LŒø‚É‚·‚é ‚Ìƒ`ƒFƒbƒN‚ğŠO‚µ‚Ü‚·")
     }
   }
 
@@ -242,12 +162,12 @@ class IPAddr : Menu {
 }
 
 class Root : Menu {
-  Root($param, $serial) : base(0, 0, "Windows Server è¨­å®šãƒ„ãƒ¼ãƒ«") {
-    $this.body += new-object Host(7, 5, $param)
-    $this.body += new-object Network(7, 7, $param.nw)
-    $this.foot += new-object Caption(7, 10, "** S/N : $serial")
+  Root($param, $serial) : base(0, 0, "Windows Server İ’èƒc[ƒ‹") {
+    $this.body += [Host]::new(7, 5, $param)
+    $this.body += [Network]::new(7, 7, $param.nw)
+    $this.foot += [Caption]::new(7, 10, "** S/N : $serial")
   }
 }
 
-$root = new-object Root($param, $serial)
+$root = [Root]::new($param, $serial)
 $root.exe()
