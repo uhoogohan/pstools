@@ -1,4 +1,4 @@
-﻿<#------------------------------------------------------------------
+<#------------------------------------------------------------------
  メニューモジュール (^^♪
 ------------------------------------------------------------------#>
 Add-Type -AssemblyName System.Windows.Forms
@@ -26,19 +26,42 @@ function show_menu($head, $body, $foot) {
     write-host $s.caption -F "Black" -B "White"
     mv_cur $s.x $s.y
 
+    # キー入力
     $kif = $rui.ReadKey("NoEcho,IncludeKeyDown")
     $kcd = $kif.VirtualKeyCode
 
     # 方向キー↑か←が押されたとき
     if($kcd -in ($kmp::Up, $kmp::Left)) {
-      write-host $s.caption; $i-=1 
+      write-host $s.caption; $i-=1
       if($i -lt 0) { $i = $body.length - 1 }
     }
 
     # 方向キー↓か→が押されたとき
     if($kcd -in ($kmp::Down, $kmp::Right)) {
       write-host $s.caption; $i+=1
-      if($i -ge $body.length) { $i = 0; }
+      if($i -ge $body.length) {$i = 0}
+    }
+
+    # PgDownが押されたとき
+    if($kcd -eq $kmp::PageUp) {
+      write-host $s.caption; $i-=15
+      if($i -lt 0) {$i = 0}
+    }
+
+    # PgUpが押されたとき
+    if($kcd -eq $kmp::PageDown) {
+      write-host $s.caption; $i+=15
+      if($i -ge $body.length) {$i = $body.length -1}
+    }
+
+    # Homeが押されたとき
+    if($kcd -eq $kmp::Home) {
+      write-host $s.caption; $i = 0
+    }
+
+    # Endが押されたとき
+    if($kcd -eq $kmp::End) {
+      write-host $s.caption; $i = $body.length -1
     }
 
     # Enterキーが押されたとき
